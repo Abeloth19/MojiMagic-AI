@@ -1,5 +1,6 @@
 from transformers import pipeline
 import logging
+import re
 
 class EmojiMapper:
     def __init__(self):
@@ -13,6 +14,7 @@ class EmojiMapper:
             logging.error(f"Failed to load model: {e}")
             self.emotion_analyzer = None
         
+  
         self.emotion_emoji_map = {
             "joy": ["😊", "😄", "🎉", "🥳", "✨"],
             "sadness": ["😢", "😞", "💔", "🥺", "😔"],
@@ -23,6 +25,49 @@ class EmojiMapper:
             "optimism": ["😌", "🌟", "💪", "🌈", "⭐"],
             "pessimism": ["😑", "😒", "🙄", "😐", "😕"]
         }
+        
+       
+        self.content_emoji_map = {
+          
+            "hungry": ["🍕", "🍔", "🍜", "🍎", "🍕"],
+            "food": ["🍕", "🍔", "🍜", "🍎", "🍕"],
+            "eat": ["🍕", "🍔", "🍜", "🍎", "🍕"],
+            "dinner": ["🍕", "🍔", "🍜", "🍎", "🍕"],
+            "lunch": ["🍕", "🍔", "🍜", "🍎", "🍕"],
+            "breakfast": ["🍕", "🍔", "🍜", "🍎", "🍕"],
+            
+           
+            "dragon": ["🐉", "🔥", "⚡", "💎"],
+            "cat": ["🐱", "😺", "🐈", "🐾"],
+            "dog": ["🐕", "🐶", "🦮", "🐾"],
+            "unicorn": ["🦄", "✨", "🌈", "💫"],
+            "panda": ["🐼", "🎋", "🍃", "💚"],
+            "lion": ["🦁", "🦁", "🔥", "⚡"],
+            "tiger": ["🐯", "🔥", "⚡", "💪"],
+            
+          
+            "fire": ["🔥", "💥", "⚡", "🌋"],
+            "water": ["💧", "🌊", "💦", "🌊"],
+            "earth": ["🌍", "🌱", "🌿", "💚"],
+            "air": ["💨", "☁️", "🌪️", "🕊️"],
+            
+       
+            "sleep": ["😴", "💤", "🌙", "🛏️"],
+            "work": ["💼", "💻", "📊", "📈"],
+            "study": ["📚", "✏️", "📝", "🎓"],
+            "party": ["🎉", "🎊", "🎈", "🎆"],
+            "travel": ["✈️", "🚗", "🗺️", "🌍"],
+            "music": ["🎵", "🎶", "🎸", "🎤"],
+            "sport": ["⚽", "🏃", "💪", "🏆"],
+            
+           
+            "book": ["📚", "📖", "📝", "✏️"],
+            "phone": ["📱", "📞", "📲", "💬"],
+            "car": ["🚗", "🏎️", "🚙", "🚐"],
+            "house": ["🏠", "🏡", "🏘️", "🏚️"],
+            "money": ["💰", "💵", "💸", "🤑"],
+            "time": ["⏰", "🕐", "⏳", "⌚"]
+        }
 
     def text_to_emojis(self, text: str) -> dict:
         if not self.emotion_analyzer:
@@ -32,10 +77,14 @@ class EmojiMapper:
             }
         
         try:
+          
             emotions = self.emotion_analyzer(text)[0]  # Get first (and only) result
             top_emotions = sorted(emotions, key=lambda x: x['score'], reverse=True)[:2]
             
-            emoji_string = ""
+    
+            content_emojis = self._get_content_emojis(text.lower())
+            
+            emotion_emojis = ""
             emotion_scores = {}
             
             for emotion_data in top_emotions:
@@ -46,13 +95,17 @@ class EmojiMapper:
                 if emotion in self.emotion_emoji_map:
                     emoji_count = 2 if score > 0.3 else 1
                     emojis = self.emotion_emoji_map[emotion][:emoji_count]
-                    emoji_string += "".join(emojis)
+                    emotion_emojis += "".join(emojis)
             
-            if not emoji_string:
-                emoji_string = "🤔💭"
+        
+            combined_emojis = content_emojis + emotion_emojis
+            
+         
+            if not combined_emojis:
+                combined_emojis = "🤔💭"
                 
             return {
-                "emojis": emoji_string,
+                "emojis": combined_emojis,
                 "emotions": emotion_scores
             }
             
@@ -61,3 +114,16 @@ class EmojiMapper:
                 "emojis": "❓🤖",
                 "emotions": {"error": str(e)}
             }
+    
+    def _get_content_emojis(self, text: str) -> str:
+        """Extract content-based emojis from text"""
+        emoji_string = ""
+        text_words = re.findall(r'\b\w+\b', text.lower())
+        
+        for word in text_words:
+            if word in self.content_emoji_map:
+             
+                emojis = self.content_emoji_map[word][:2]
+                emoji_string += "".join(emojis)
+        
+        return emoji_string
