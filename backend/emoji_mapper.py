@@ -32,7 +32,7 @@ class EmojiMapper:
             }
         
         try:
-            emotions = self.emotion_analyzer(text)
+            emotions = self.emotion_analyzer(text)[0]  # Get first (and only) result
             top_emotions = sorted(emotions, key=lambda x: x['score'], reverse=True)[:2]
             
             emoji_string = ""
